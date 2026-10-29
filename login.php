@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <button type="submit">Entrar</button>
     </form>
 
-    <small>Admin inicial: admin@bibliotech.local / 123456</small>
+   
 </main>
 </body>
 </html>

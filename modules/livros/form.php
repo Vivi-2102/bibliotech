@@ -14,16 +14,51 @@ $livro = [
     'quantidade_disponivel' => 1
 ];
 
-if ($id) {
-    $stmt = $pdo->prepare('SELECT * FROM livros WHERE id = :id');
-    $stmt->execute(['id' => $id]);
-    $livro = $stmt->fetch() ?: $livro;
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // TODO: implementar INSERT e UPDATE.
-    // Regra: quantidade_disponivel não pode ser negativa nem maior que quantidade_total.
-    $mensagem = 'Formulário preparado. Implemente o salvamento nesta aula.';
+
+    $titulo = trim($_POST['titulo'] ?? '');
+    $autor = trim($_POST['autor'] ?? '');
+    $ano_publicacao = $_POST['ano_publicacao'] ?? '';
+    $quantidade_total = filter_input(INPUT_POST, 'quantidade_total', FILTER_VALIDATE_INT);
+
+    // Validação dos campos
+    if ($titulo === '' || $autor === '') {
+        $mensagem = 'Preencha o título e o autor.';
+    } elseif ($quantidade_total === false || $quantidade_total === null || $quantidade_total < 1) {
+        $mensagem = 'Informe uma quantidade total válida.';
+    } elseif ($ano_publicacao !== '' && filter_var($ano_publicacao, FILTER_VALIDATE_INT) === false) {
+        $mensagem = 'Informe um ano de publicação válido.';
+    } else {
+
+        // A quantidade disponível começa igual à quantidade total
+        $quantidade_disponivel = $quantidade_total;
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO livros
+            (titulo, autor, ano_publicacao, quantidade_total, quantidade_disponivel)
+            VALUES
+            (:titulo, :autor, :ano_publicacao, :quantidade_total, :quantidade_disponivel)'
+        );
+
+        $stmt->execute([
+            'titulo' => $titulo,
+            'autor' => $autor,
+            'ano_publicacao' => $ano_publicacao === '' ? null : $ano_publicacao,
+            'quantidade_total' => $quantidade_total,
+            'quantidade_disponivel' => $quantidade_disponivel
+        ]);
+
+        $mensagem = 'Livro cadastrado com sucesso!';
+
+        // Limpar os campos após o cadastro
+        $livro = [
+            'titulo' => '',
+            'autor' => '',
+            'ano_publicacao' => '',
+            'quantidade_total' => 1,
+            'quantidade_disponivel' => 1
+        ];
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -31,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $id ? 'Editar' : 'Novo' ?> livro</title>
+    <title>Novo livro</title>
     <link rel="stylesheet" href="../../assets/css/style.css">
 </head>
 <body>
@@ -39,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <main class="container">
     <div class="card">
-        <h1><?= $id ? 'Editar livro' : 'Novo livro' ?></h1>
+        <h1>Novo livro</h1>
 
         <?php if (!empty($mensagem)): ?>
             <div class="alert"><?= htmlspecialchars($mensagem) ?></div>
@@ -63,4 +98,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </main>
 </body>
-</html>
+</html> 

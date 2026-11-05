@@ -1,12 +1,19 @@
+
 <?php
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../database/conexao.php';
 
 exigirPerfil(['admin', 'professor']);
 
-$usuarios = $pdo->query(
+// Consultar os usuários cadastrados no banco de dados
+$stmt = $pdo->prepare(
     'SELECT id, nome, email, tipo, status FROM usuarios ORDER BY nome'
-)->fetchAll();
+);
+
+$stmt->execute();
+
+// Recuperar todos os usuários encontrados
+$usuarios = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">

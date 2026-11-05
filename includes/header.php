@@ -1,3 +1,4 @@
+
 <?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -9,11 +10,17 @@ if (session_status() === PHP_SESSION_NONE) {
     <nav>
         <a href="../dashboard/index.php">Dashboard</a>
 
-        <?php if (in_array($_SESSION['tipo'] ?? '', ['admin', 'professor'], true)): ?>
+        <?php if (($_SESSION['tipo'] ?? '') === 'admin'): ?>
             <a href="../usuarios/index.php">Usuários</a>
             <a href="../livros/index.php">Livros</a>
             <a href="../emprestimos/index.php">Empréstimos</a>
-        <?php else: ?>
+
+        <?php elseif (($_SESSION['tipo'] ?? '') === 'professor'): ?>
+            <a href="../usuarios/index.php">Alunos</a>
+            <a href="../livros/index.php">Livros</a>
+            <a href="../emprestimos/index.php">Empréstimos</a>
+
+        <?php elseif (($_SESSION['tipo'] ?? '') === 'aluno'): ?>
             <a href="../livros/index.php">Livros</a>
             <a href="../emprestimos/meus.php">Meus empréstimos</a>
         <?php endif; ?>

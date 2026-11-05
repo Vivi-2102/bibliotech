@@ -5,16 +5,33 @@ require_once __DIR__ . '/../../database/conexao.php';
 
 exigirPerfil(['admin', 'professor']);
 
-// Consultar os usuários cadastrados no banco de dados
-$stmt = $pdo->prepare(
-    'SELECT id, nome, email, tipo, status FROM usuarios ORDER BY nome'
-);
+if ($_SESSION['tipo'] === 'professor') {
 
-$stmt->execute();
+    // Buscar somente usuários do tipo aluno
+    $stmt = $pdo->prepare(
+        "SELECT id, nome, email, tipo, status
+         FROM usuarios
+         WHERE tipo = :tipo
+         ORDER BY nome"
+    );
 
-// Recuperar todos os usuários encontrados
+    $stmt->execute(['tipo' => 'aluno']);
+
+} else {
+
+    // Administrador pode visualizar todos os usuários
+    $stmt = $pdo->prepare(
+        'SELECT id, nome, email, tipo, status
+         FROM usuarios
+         ORDER BY nome'
+    );
+
+    $stmt->execute();
+}
+
 $usuarios = $stmt->fetchAll();
 ?>
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>

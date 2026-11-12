@@ -1,3 +1,4 @@
+
 <?php
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../database/conexao.php';
@@ -15,14 +16,109 @@ $livros = $pdo->query(
      ORDER BY titulo"
 )->fetchAll();
 
+$mensagem = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // TODO:
-    // 1. Validar usuário e livro.
-    // 2. Verificar disponibilidade.
-    // 3. INSERT em emprestimos.
-    // 4. UPDATE livros SET quantidade_disponivel = quantidade_disponivel - 1.
-    // 5. Use transação (beginTransaction/commit/rollBack).
-    $mensagem = 'Agora implemente a regra de empréstimo.';
+
+    $usuario_id = filter_input(INPUT_POST, 'usuario_id', FILTER_VALIDATE_INT);
+    $livro_id = filter_input(INPUT_POST, 'livro_id', FILTER_VALIDATE_INT);
+    $data_devolucao_prevista = $_POST['data_devolucao_prevista'] ?? '';
+
+    if (!$usuario_id || !$livro_id || $data_devolucao_prevista === '') {
+
+        $mensagem = 'Preencha todos os campos corretamente.';
+
+    } else {
+
+        try {
+
+            // Iniciar transação
+            $pdo->beginTransaction();
+
+            // Verificar se o aluno existe e está ativo
+            $stmt = $pdo->prepare(
+                "SELECT id FROM usuarios
+                 WHERE id = :id AND tipo = 'aluno' AND status = 'ativo'"
+            );
+
+            $stmt->execute(['id' => $usuario_id]);
+            $usuario = $stmt->fetch();
+
+            if (!$usuario) {
+                throw new Exception('Aluno não encontrado ou inativo.');
+            }
+
+            // Verificar se o livro existe e possui disponibilidade
+            $stmt = $pdo->prepare(
+                'SELECT quantidade_disponivel
+                 FROM livros
+                 WHERE id = :id
+                 FOR UPDATE'
+            );
+
+            $stmt->execute(['id' => $livro_id]);
+            $livro = $stmt->fetch();
+
+            if (!$livro) {
+                throw new Exception('Livro não encontrado.');
+            }
+
+            if ($livro['quantidade_disponivel'] <= 0) {
+                throw new Exception('Não existe livro disponível para empréstimo.');
+            }
+
+            // Registrar o empréstimo
+            $stmt = $pdo->prepare(
+                'INSERT INTO emprestimos
+                (usuario_id, livro_id, data_retirada, data_devolucao_prevista, status)
+                VALUES
+                (:usuario_id, :livro_id, :data_retirada, :data_devolucao_prevista, :status)'
+            );
+
+            $stmt->execute([
+                'usuario_id' => $usuario_id,
+                'livro_id' => $livro_id,
+                'data_retirada' => date('Y-m-d'),
+                'data_devolucao_prevista' => $data_devolucao_prevista,
+                'status' => 'ativo'
+            ]);
+
+            // Diminuir a quantidade disponível do livro
+            $stmt = $pdo->prepare(
+                'UPDATE livros
+                 SET quantidade_disponivel = quantidade_disponivel - 1
+                 WHERE id = :id AND quantidade_disponivel > 0'
+            );
+
+            $stmt->execute(['id' => $livro_id]);
+
+            if ($stmt->rowCount() !== 1) {
+                throw new Exception('Não foi possível atualizar a quantidade disponível.');
+            }
+
+            // Confirmar as operações
+            $pdo->commit();
+
+            $mensagem = 'Empréstimo registrado com sucesso!';
+
+            // Atualizar a lista de livros disponíveis
+            $livros = $pdo->query(
+                "SELECT id, titulo, quantidade_disponivel
+                 FROM livros
+                 WHERE quantidade_disponivel > 0
+                 ORDER BY titulo"
+            )->fetchAll();
+
+        } catch (Exception $e) {
+
+            // Desfazer operações em caso de erro
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            $mensagem = $e->getMessage();
+        }
+    }
 }
 ?>
 <!DOCTYPE html>

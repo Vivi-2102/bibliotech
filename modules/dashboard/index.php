@@ -1,3 +1,4 @@
+
 <?php
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../database/conexao.php';
@@ -5,7 +6,30 @@ require_once __DIR__ . '/../../database/conexao.php';
 exigirLogin();
 
 $livros = $pdo->query('SELECT COUNT(*) FROM livros')->fetchColumn();
-$usuarios = $pdo->query('SELECT COUNT(*) FROM usuarios')->fetchColumn();
+
+// Administrador visualiza todos os usuários
+// Professor visualiza somente os alunos
+if ($_SESSION['tipo'] === 'admin') {
+
+    $usuarios = $pdo->query(
+        'SELECT COUNT(*) FROM usuarios'
+    )->fetchColumn();
+
+} elseif ($_SESSION['tipo'] === 'professor') {
+
+    $stmt = $pdo->prepare(
+        "SELECT COUNT(*) FROM usuarios WHERE tipo = 'aluno'"
+    );
+
+    $stmt->execute();
+    $usuarios = $stmt->fetchColumn();
+
+} else {
+
+    $usuarios = 0;
+
+}
+
 $emprestimos = $pdo->query("SELECT COUNT(*) FROM emprestimos WHERE status = 'ativo'")->fetchColumn();
 
 require_once __DIR__ . '/../../includes/header.php';

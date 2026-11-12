@@ -1,9 +1,11 @@
+
 <?php
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../database/conexao.php';
 
 exigirPerfil(['aluno']);
 
+// Buscar somente os empréstimos do aluno conectado
 $stmt = $pdo->prepare(
     "SELECT l.titulo, l.autor, e.data_retirada,
             e.data_devolucao_prevista, e.data_devolucao_real, e.status
@@ -12,7 +14,11 @@ $stmt = $pdo->prepare(
      WHERE e.usuario_id = :usuario_id
      ORDER BY e.id DESC"
 );
-$stmt->execute(['usuario_id' => $_SESSION['usuario_id']]);
+
+$stmt->execute([
+    'usuario_id' => $_SESSION['usuario_id']
+]);
+
 $emprestimos = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
